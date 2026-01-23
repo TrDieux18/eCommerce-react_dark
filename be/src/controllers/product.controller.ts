@@ -1,7 +1,5 @@
-
-import { Types } from "mongoose";
-import { Product } from "../models/product.model";
 import { Request, Response } from "express";
+import productService from "../services/product.service";
 
 export const getAllProducts = async (req: Request, res: Response) => {
    try {
@@ -9,42 +7,32 @@ export const getAllProducts = async (req: Request, res: Response) => {
 
       const pageNum = parseInt(page as string);
       const limitNum = parseInt(limit as string);
-      const skip = (pageNum - 1) * limitNum;
 
-      const query: any = {};
-
-      if (search) {
-         query.title = { $regex: search, $options: 'i' };
-      }
-
-      if (category && category !== 'all') {
-         query.slug = { $regex: category, $options: 'i' };
-      }
-
-      const products = await Product.find(query)
-         .skip(skip)
-         .limit(limitNum)
-         .sort({ createdAt: -1 });
-
-      const total = await Product.countDocuments(query);
-      const totalPages = Math.ceil(total / limitNum);
+      const result = await productService.getAllProducts(
+         pageNum,
+         limitNum,
+         search as string,
+         category as string
+      );
 
       res.status(200).json({
          success: true,
-         data: products,
-         totalPages,
-         currentPage: pageNum,
-         total
+         data: result.products,
+         totalPages: result.totalPages,
+         currentPage: result.currentPage,
+         total: result.total
       });
    } catch (error: any) {
-      res.status(500).json({ message: (error as Error).message });
+      const status = error.status || 500;
+      res.status(status).json({ message: error.message });
    }
 }
 
 export const createProduct = async (req: Request, res: Response) => {
    try {
       const { title, description, price, discountPercentage, rating, stock, thumbnail, slug } = req.body;
-      const newProduct = new Product({
+
+      const savedProduct = await productService.createProduct({
          title,
          description,
          price,
@@ -54,73 +42,54 @@ export const createProduct = async (req: Request, res: Response) => {
          thumbnail,
          slug
       });
-      const savedProduct = await newProduct.save();
+
       res.status(201).json({ success: true, data: savedProduct });
-   }
-   catch (error: any) {
-      res.status(500).json({ message: error.message });
+   } catch (error: any) {
+      const status = error.status || 500;
+      res.status(status).json({ message: error.message });
    }
 };
 
 export const updateProduct = async (req: Request, res: Response) => {
    try {
-
       const { _id, title, description, price, discountPercentage, rating, stock, thumbnail, slug } = req.body;
-      const updatedProduct = await Product.findByIdAndUpdate(
-         _id,
-         {
-            title,
-            description,
-            price,
-            discountPercentage,
-            rating,
-            stock,
-            thumbnail,
-            slug
-         },
-         { new: true }
-      );
 
-      if (!updatedProduct) {
-         return res.status(404).json({ message: "Product not found" });
-      }
+      const updatedProduct = await productService.updateProduct(_id, {
+         title,
+         description,
+         price,
+         discountPercentage,
+         rating,
+         stock,
+         thumbnail,
+         slug
+      });
 
       res.status(200).json({ success: true, data: updatedProduct });
-
    } catch (error: any) {
-      res.status(500).json({ message: error.message });
+      const status = error.status || 500;
+      res.status(status).json({ message: error.message });
    }
 };
-
 
 export const getProductById = async (req: Request, res: Response) => {
    try {
       const { id } = req.params;
-      const product = await Product.findById({
-         _id: new Types.ObjectId(id)
-      });
-      if (!product) {
-         return res.status(404).json({ message: "Product not found" });
-      }
+      const product = await productService.getProductById(id);
       res.status(200).json({ success: true, data: product });
    } catch (error: any) {
-      res.status(500).json({ message: error.message });
+      const status = error.status || 500;
+      res.status(status).json({ message: error.message });
    }
 };
-
-
 
 export const deleteProduct = async (req: Request, res: Response) => {
    try {
       const { id } = req.params;
-      const deletedProduct = await Product.findByIdAndDelete({
-         _id: new Types.ObjectId(id)
-      });
-      if (!deletedProduct) {
-         return res.status(404).json({ message: "Product not found" });
-      }
+      await productService.deleteProduct(id);
       res.status(200).json({ success: true, message: "Product deleted successfully" });
    } catch (error: any) {
-      res.status(500).json({ message: error.message });
+      const status = error.status || 500;
+      res.status(status).json({ message: error.message });
    }
 }
