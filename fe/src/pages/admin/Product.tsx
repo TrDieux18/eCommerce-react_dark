@@ -25,7 +25,7 @@ const ProductPage = () => {
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearchTerm(searchTerm);
-    }, 500);
+    }, 1000);
 
     return () => clearTimeout(timer);
   }, [searchTerm]);
@@ -66,7 +66,7 @@ const ProductPage = () => {
   const handleDelete = async (id: string) => {
     if (!id) return;
     const confirmDelete = window.confirm(
-      "Bạn có chắc chắn muốn xóa sản phẩm này?"
+      "Bạn có chắc chắn muốn xóa sản phẩm này?",
     );
     if (confirmDelete) {
       try {
@@ -76,7 +76,7 @@ const ProductPage = () => {
           return;
         }
         setProducts((prevProducts) =>
-          prevProducts.filter((product) => product._id !== id)
+          prevProducts.filter((product) => product._id !== id),
         );
         alert("Xóa sản phẩm thành công!");
       } catch (error) {
@@ -201,8 +201,8 @@ const ProductPage = () => {
                         product.stock > 20
                           ? "bg-green-900/20 text-green-400 border border-green-800"
                           : product.stock > 0
-                          ? "bg-yellow-900/20 text-yellow-400 border border-yellow-800"
-                          : "bg-red-900/20 text-red-400 border border-red-800"
+                            ? "bg-yellow-900/20 text-yellow-400 border border-yellow-800"
+                            : "bg-red-900/20 text-red-400 border border-red-800"
                       }`}
                     >
                       {product.stock} sp

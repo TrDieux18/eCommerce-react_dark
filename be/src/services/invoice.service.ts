@@ -1,6 +1,7 @@
 import Invoice from "../models/invoice.model";
 import { Cart } from "../models/cart.model";
 import { Product } from "../models/product.model";
+import { invalidateRecommendationCache } from "./nextPurchasePrediction.service";
 
 export class InvoiceService {
    async createInvoice(
@@ -54,6 +55,9 @@ export class InvoiceService {
       });
 
       await invoice.save();
+
+      // Invalidate recommendation cache for this user (background, non-blocking)
+      invalidateRecommendationCache(userId).catch(() => {});
 
       // Clear cart if requested
       if (clearCart) {

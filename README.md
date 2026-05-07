@@ -14,6 +14,7 @@ _Giao diện trang chủ với danh sách sản phẩm nổi bật_
 - 🛒 **Giỏ hàng**: Thêm/xóa/cập nhật số lượng sản phẩm
 - 💳 **Mua hàng**: Mua ngay hoặc thanh toán từ giỏ hàng
 - 📦 **Đơn hàng**: Xem lịch sử đơn hàng đã đặt
+- 🤖 **Next Purchase Prediction**: Gợi ý sản phẩm có khả năng mua tiếp theo dựa trên lịch sử mua hàng
 
 ### Quản trị viên
 
@@ -44,6 +45,12 @@ _Trang quản trị với thống kê tổng quan hệ thống_
 - **MongoDB** + **Mongoose** - Database
 - **CORS** - Cross-Origin Resource Sharing
 
+### Machine Learning
+
+- **Python** - Huấn luyện và suy luận mô hình dự đoán
+- **scikit-learn** - KNN và Random Forest
+- **pandas / pymongo** - Trích xuất và xử lý dữ liệu lịch sử mua hàng
+
 ## 📋 Yêu cầu hệ thống
 
 - Node.js >= 18.x
@@ -64,6 +71,13 @@ cd BaiTapPTTKHT
 ```bash
 cd be
 npm install
+```
+
+Cài thêm dependency Python cho mô hình dự đoán:
+
+```bash
+cd be
+pip install -r ml/requirements.txt
 ```
 
 Tạo file `.env` trong thư mục `be`:
@@ -189,6 +203,21 @@ BaiTapPTTKHT/
 - `POST /invoices` - Tạo hóa đơn
 - `GET /invoices/user/:userId` - Lấy hóa đơn của user
 - `GET /admin/invoices` - Lấy tất cả hóa đơn (admin)
+
+### Recommendations
+
+- `GET /recommendations/next-purchase/:userId` - Dự đoán sản phẩm user có khả năng mua tiếp theo
+- Query `limit` và `model` hỗ trợ tuỳ chỉnh số lượng gợi ý và thuật toán (`auto`, `knn`, `random_forest`)
+- Kết quả được cache theo fingerprint dữ liệu để tránh huấn luyện lại khi hóa đơn và catalog chưa đổi
+- Gợi ý cũng được hiển thị trên trang chủ và trang chi tiết sản phẩm
+
+### Pipeline khoa học
+
+1. Thu thập dữ liệu mua hàng từ `Invoice` và `Product`
+2. Tạo đặc trưng từ lịch sử mua, khoảng cách thời gian và hành vi gần nhất
+3. Huấn luyện và so sánh hai mô hình `L7-KNN` và `L8-Random Forest`
+4. Chọn mô hình tốt hơn theo điểm đánh giá và trả về top gợi ý
+5. FE hiển thị gợi ý ngay ở trang chi tiết sản phẩm
 
 ### Auth
 

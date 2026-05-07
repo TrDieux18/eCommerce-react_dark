@@ -7,9 +7,16 @@ import { SYSTEM } from "./config/system";
 import adminRoute from "./routes/admin/index.route";
 import clientRoute from "./routes/client/index.route";
 
+import { getCache, getCacheType } from "./config/redis";
+
 dotenv.config();
 
 connectDB();
+
+// Kiểm tra kết nối Redis khi server khởi động
+getCache().then(() => {
+  console.log(`✅ Cache ready (type: ${getCacheType()})`);
+});
 
 const app = express();
 

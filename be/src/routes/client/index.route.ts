@@ -1,7 +1,25 @@
-import { getAllProducts, getProductById } from "../../controllers/product.controller";
-import { login, register, getUserById, updateUser } from "../../controllers/user.controller";
-import { getCart, addToCart, updateCartItem, removeFromCart, clearCart } from "../../controllers/cart.controller";
-import { createInvoice, getInvoicesByUser } from "../../controllers/invoice.controller";
+import {
+  getAllProducts,
+  getProductById,
+} from "../../controllers/product.controller";
+import {
+  login,
+  register,
+  getUserById,
+  updateUser,
+} from "../../controllers/user.controller";
+import {
+  getCart,
+  addToCart,
+  updateCartItem,
+  removeFromCart,
+  clearCart,
+} from "../../controllers/cart.controller";
+import {
+  createInvoice,
+  getInvoicesByUser,
+} from "../../controllers/invoice.controller";
+import { getNextPurchasePrediction } from "../../controllers/recommendation.controller";
 import express from "express";
 const router = express.Router();
 
@@ -18,6 +36,7 @@ router.delete("/cart/clear/:userId", clearCart);
 
 router.post("/invoices", createInvoice);
 router.get("/invoices/user/:userId", getInvoicesByUser);
+router.get("/recommendations/next-purchase/:userId", getNextPurchasePrediction);
 
 router.get("/profile/:id", getUserById);
 router.patch("/profile/:id", updateUser);
