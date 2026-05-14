@@ -12,7 +12,7 @@ const execFileAsync = promisify(execFile);
 export interface NextPurchasePredictionOptions {
   userId: string;
   limit?: number;
-  model?: "auto" | "knn" | "random_forest";
+  model?: "auto" | "knn" | "svd" | "random_forest";
 }
 
 export interface NextPurchasePredictionResult {
@@ -20,6 +20,7 @@ export interface NextPurchasePredictionResult {
   mode: string;
   metrics: {
     knn?: Record<string, unknown>;
+    svd?: Record<string, unknown>;
     random_forest?: Record<string, unknown>;
     selected?: number;
   };

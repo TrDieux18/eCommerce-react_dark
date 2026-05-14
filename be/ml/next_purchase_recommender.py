@@ -30,6 +30,7 @@ import joblib
 import numpy as np
 from pymongo import MongoClient
 from sklearn.metrics.pairwise import cosine_similarity
+from sklearn.decomposition import TruncatedSVD
 
 
 # ---------------------------------------------------------------------------
@@ -265,6 +266,52 @@ def knn_recommend(
     return dict(product_scores)
 
 
+def svd_recommend(
+    target_user_id: str,
+    user_history: Dict[str, Counter],
+    svd_user_factors: Optional[np.ndarray],
+    svd_components: Optional[np.ndarray],
+    user_ids: List[str],
+    product_index: Dict[str, int],
+) -> Dict[str, float]:
+    """
+    Predict product scores using TruncatedSVD factors.
+    """
+    if svd_user_factors is None or svd_components is None:
+        return {}
+    if target_user_id not in user_history:
+        return {}
+
+    try:
+        target_idx = user_ids.index(target_user_id)
+    except ValueError:
+        return {}
+
+    target_factor = svd_user_factors[target_idx]
+    predicted_row = np.dot(target_factor, svd_components)
+
+    target_products = set(user_history[target_user_id].keys())
+    inv_product_index = {idx: pid for pid, idx in product_index.items()}
+
+    product_scores: Dict[str, float] = {}
+    for col, score in enumerate(predicted_row):
+        pid = inv_product_index[col]
+        if pid not in target_products:
+            product_scores[pid] = float(score)
+
+    if product_scores:
+        min_score = min(product_scores.values())
+        if min_score < 0:
+            for pid in product_scores:
+                product_scores[pid] -= min_score
+        max_score = max(product_scores.values())
+        if max_score > 0:
+            for pid in product_scores:
+                product_scores[pid] /= max_score
+
+    return product_scores
+
+
 def compute_content_similarity(
     catalog: Dict[str, Dict[str, Any]],
     bought_products: set,
@@ -445,7 +492,7 @@ def main() -> int:
         "--predict-only", action="store_true",
         help="Only predict using cached model; exit 2 if no cache",
     )
-    parser.add_argument("--model", choices=["auto", "knn", "random_forest"], default="auto")
+    parser.add_argument("--model", choices=["auto", "knn", "svd", "random_forest"], default="auto")
     args = parser.parse_args()
 
     try:
@@ -509,6 +556,14 @@ def main() -> int:
             )
             co_purchase = build_co_purchase_scores(sequences)
 
+            svd_user_factors = None
+            svd_components = None
+            n_components = min(20, matrix.shape[0] - 1, matrix.shape[1] - 1)
+            if n_components > 0:
+                svd = TruncatedSVD(n_components=n_components, random_state=42)
+                svd_user_factors = svd.fit_transform(matrix)
+                svd_components = svd.components_
+
             artifact = {
                 "matrix": matrix,
                 "user_ids": user_ids,
@@ -518,6 +573,8 @@ def main() -> int:
                 "popularity": popularity,
                 "user_history": user_history,
                 "sequences": sequences,
+                "svd_user_factors": svd_user_factors,
+                "svd_components": svd_components,
             }
             os.makedirs(os.path.dirname(artifact_path), exist_ok=True)
             joblib.dump(artifact, artifact_path)
@@ -531,6 +588,8 @@ def main() -> int:
         stored_popularity = artifact["popularity"]
         stored_history = artifact["user_history"]
         stored_sequences = artifact["sequences"]
+        svd_user_factors = artifact.get("svd_user_factors")
+        svd_components = artifact.get("svd_components")
 
         # Use latest catalog/popularity but cached model structure
         cat = catalog if not from_cache else stored_catalog
@@ -542,23 +601,30 @@ def main() -> int:
         user_seq = seqs.get(args.user_id, [])
         user_bought = set(hist.get(args.user_id, {}).keys())
 
+        mode_used = "fallback_popularity"
         if not user_seq:
             # User has no history → popularity fallback
             recs = popularity_recommendations(pop, cat, args.limit)
         else:
-            # KNN collaborative filtering
-            k = min(5, max(1, total_users - 1))
-            knn_scores = knn_recommend(
-                args.user_id, hist, matrix, user_ids, product_index, k=k,
-            )
+            if args.model == "svd" or (args.model == "auto" and svd_user_factors is not None):
+                model_scores = svd_recommend(
+                    args.user_id, hist, svd_user_factors, svd_components, user_ids, product_index
+                )
+                mode_used = "svd"
+            else:
+                k = min(5, max(1, total_users - 1))
+                model_scores = knn_recommend(
+                    args.user_id, hist, matrix, user_ids, product_index, k=k,
+                )
+                mode_used = "knn"
 
             recs = rank_recommendations(
-                knn_scores, co_purchase, user_seq, pop, cat, user_bought, args.limit,
+                model_scores, co_purchase, user_seq, pop, cat, user_bought, args.limit,
             )
 
         payload = {
             "success": True,
-            "mode": "knn",
+            "mode": mode_used,
             "cache": {
                 "hit": from_cache,
                 "path": artifact_path,

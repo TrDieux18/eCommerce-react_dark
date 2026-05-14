@@ -135,9 +135,9 @@ const HomePage = () => {
   }
 
   return (
-    <div className="space-y-4 px-8">
+    <div className="space-y-12 px-4 md:px-8 lg:px-12 py-10 max-w-[1400px] mx-auto">
       {/* Search & Filter */}
-      <div className="flex flex-col md:flex-row gap-4 mb-6">
+      <div className="flex flex-col md:flex-row gap-6 mb-10">
         <SearchInput
           value={searchTerm}
           onChange={(value) => {
@@ -158,7 +158,7 @@ const HomePage = () => {
 
       {/* Products section */}
       <div>
-        <h2 className="text-3xl font-bold text-slate-100 mb-6">
+        <h2 className="text-3xl font-bold text-slate-100 mb-8">
           Sản Phẩm Nổi Bật
         </h2>
 
@@ -166,7 +166,7 @@ const HomePage = () => {
         <RecommendationSection />
 
         {/* Product Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-10">
           {products.map((product) => (
             <ProductCard
               key={product._id}

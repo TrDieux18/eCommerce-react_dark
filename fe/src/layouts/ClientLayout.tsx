@@ -26,8 +26,8 @@ const ClientLayout: React.FC = () => {
     <div className="min-h-screen flex flex-col bg-slate-950">
       <header className="bg-slate-900 border-b border-slate-800 shadow-xl sticky top-0 z-50">
         <div className="container mx-auto px-6 py-2">
-          <div className="flex justify-between items-center">
-            <NavLink to="/" className="flex items-center gap-2 group">
+          <div className="flex justify-between items-center gap-4">
+            <NavLink to="/" className="flex items-center gap-2 group shrink-0">
               <div className="p-2 rounded-lg group-hover:bg-slate-700 transition-all">
                 <img
                   src="/download.jpg"
@@ -35,96 +35,14 @@ const ClientLayout: React.FC = () => {
                   className="w-14 h-14 object-cover rounded-full"
                 />
               </div>
-              <h1 className="text-3xl font-bold text-slate-100">Dark Hawk</h1>
+              <h1 className="text-3xl font-bold text-slate-100 hidden lg:block">Dark Hawk</h1>
             </NavLink>
 
-            <div className="flex items-center gap-6">
-              {user?.role === "admin" && (
-                <button
-                  onClick={() => navigate("/admin")}
-                  className="text-slate-300  hover:text-slate-100 transition-colors flex items-center gap-1 bg-slate-500 px-2 py-2 rounded-full"
-                >
-                  <MdDashboard size={20} /> Trang quản trị
-                </button>
-              )}
-
-              <button
-                onClick={() => (user ? handleLogout() : navigate("/auth"))}
-                className="text-slate-300  hover:text-slate-100 transition-colors flex items-center gap-1 bg-slate-500 px-2 py-2 rounded-full"
-              >
-                <MdPerson size={20} /> {user ? "Đăng xuất" : "Đăng nhập"}
-              </button>
-            </div>
-          </div>
-
-          <nav className="hidden md:block  border-t border-slate-800 pt-5">
-            <ul className="flex gap-10 justify-center text-slate-300 text-lg font-medium">
-              <li>
-                <NavLink
-                  to="/"
-                  className={({ isActive }) =>
-                    `relative py-2 hover:text-slate-100 transition-colors ${
-                      isActive ? "text-slate-100" : ""
-                    }`
-                  }
-                >
-                  {({ isActive }) => (
-                    <>
-                      Trang chủ
-                      {isActive && (
-                        <span className="absolute bottom-0 left-0 w-full h-0.5 bg-slate-100" />
-                      )}
-                    </>
-                  )}
-                </NavLink>
-              </li>
-              <li>
-                <NavLink
-                  to="/cart"
-                  className={({ isActive }) =>
-                    `relative py-2 hover:text-slate-100 transition-colors ${
-                      isActive ? "text-slate-100" : ""
-                    }`
-                  }
-                >
-                  {({ isActive }) => (
-                    <>
-                      Giỏ hàng
-                      <span className="absolute top-0 right--1 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-red-100 bg-red-600 rounded-full">
-                        {cart.length}
-                      </span>
-                      {isActive && (
-                        <span className="absolute bottom-0 left-0 w-full h-0.5 bg-slate-100" />
-                      )}
-                    </>
-                  )}
-                </NavLink>
-              </li>
-
-              <li>
-                <NavLink
-                  to="/invoices"
-                  className={({ isActive }) =>
-                    `relative py-2 hover:text-slate-100 transition-colors ${
-                      isActive ? "text-slate-100" : ""
-                    }`
-                  }
-                >
-                  {({ isActive }) => (
-                    <>
-                      Hóa đơn
-                      {isActive && (
-                        <span className="absolute bottom-0 left-0 w-full h-0.5 bg-slate-100" />
-                      )}
-                    </>
-                  )}
-                </NavLink>
-              </li>
-
-              {user && (
+            <nav className="hidden md:block flex-1">
+              <ul className="flex gap-6 lg:gap-10 justify-center text-slate-300 text-base lg:text-lg font-medium">
                 <li>
                   <NavLink
-                    to="/profile"
+                    to="/"
                     className={({ isActive }) =>
                       `relative py-2 hover:text-slate-100 transition-colors ${
                         isActive ? "text-slate-100" : ""
@@ -133,7 +51,7 @@ const ClientLayout: React.FC = () => {
                   >
                     {({ isActive }) => (
                       <>
-                        Thông tin cá nhân
+                        Trang chủ
                         {isActive && (
                           <span className="absolute bottom-0 left-0 w-full h-0.5 bg-slate-100" />
                         )}
@@ -141,29 +59,111 @@ const ClientLayout: React.FC = () => {
                     )}
                   </NavLink>
                 </li>
+                <li>
+                  <NavLink
+                    to="/cart"
+                    className={({ isActive }) =>
+                      `relative py-2 hover:text-slate-100 transition-colors ${
+                        isActive ? "text-slate-100" : ""
+                      }`
+                    }
+                  >
+                    {({ isActive }) => (
+                      <>
+                        Giỏ hàng
+                        <span className="absolute top-0 right--1 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-red-100 bg-red-600 rounded-full">
+                          {cart.length}
+                        </span>
+                        {isActive && (
+                          <span className="absolute bottom-0 left-0 w-full h-0.5 bg-slate-100" />
+                        )}
+                      </>
+                    )}
+                  </NavLink>
+                </li>
+
+                <li>
+                  <NavLink
+                    to="/invoices"
+                    className={({ isActive }) =>
+                      `relative py-2 hover:text-slate-100 transition-colors ${
+                        isActive ? "text-slate-100" : ""
+                      }`
+                    }
+                  >
+                    {({ isActive }) => (
+                      <>
+                        Hóa đơn
+                        {isActive && (
+                          <span className="absolute bottom-0 left-0 w-full h-0.5 bg-slate-100" />
+                        )}
+                      </>
+                    )}
+                  </NavLink>
+                </li>
+
+                {user && (
+                  <li>
+                    <NavLink
+                      to="/profile"
+                      className={({ isActive }) =>
+                        `relative py-2 hover:text-slate-100 transition-colors ${
+                          isActive ? "text-slate-100" : ""
+                        }`
+                      }
+                    >
+                      {({ isActive }) => (
+                        <>
+                          Thông tin cá nhân
+                          {isActive && (
+                            <span className="absolute bottom-0 left-0 w-full h-0.5 bg-slate-100" />
+                          )}
+                        </>
+                      )}
+                    </NavLink>
+                  </li>
+                )}
+
+                <li>
+                  <NavLink
+                    to="/about"
+                    className={({ isActive }) =>
+                      `relative py-2 hover:text-slate-100 transition-colors ${
+                        isActive ? "text-slate-100" : ""
+                      }`
+                    }
+                  >
+                    {({ isActive }) => (
+                      <>
+                        Giới thiệu
+                        {isActive && (
+                          <span className="absolute bottom-0 left-0 w-full h-0.5 bg-slate-100" />
+                        )}
+                      </>
+                    )}
+                  </NavLink>
+                </li>
+              </ul>
+            </nav>
+
+            <div className="flex items-center gap-4 shrink-0">
+              {user?.role === "admin" && (
+                <button
+                  onClick={() => navigate("/admin")}
+                  className="text-slate-300 hover:text-slate-100 transition-colors flex items-center gap-1 bg-slate-500 px-3 py-2 rounded-full text-sm lg:text-base"
+                >
+                  <MdDashboard size={20} /> <span className="hidden sm:inline">Trang quản trị</span>
+                </button>
               )}
 
-              <li>
-                <NavLink
-                  to="/about"
-                  className={({ isActive }) =>
-                    `relative py-2 hover:text-slate-100 transition-colors ${
-                      isActive ? "text-slate-100" : ""
-                    }`
-                  }
-                >
-                  {({ isActive }) => (
-                    <>
-                      Giới thiệu
-                      {isActive && (
-                        <span className="absolute bottom-0 left-0 w-full h-0.5 bg-slate-100" />
-                      )}
-                    </>
-                  )}
-                </NavLink>
-              </li>
-            </ul>
-          </nav>
+              <button
+                onClick={() => (user ? handleLogout() : navigate("/auth"))}
+                className="text-slate-300 hover:text-slate-100 transition-colors flex items-center gap-1 bg-slate-500 px-3 py-2 rounded-full text-sm lg:text-base"
+              >
+                <MdPerson size={20} /> <span className="hidden sm:inline">{user ? "Đăng xuất" : "Đăng nhập"}</span>
+              </button>
+            </div>
+          </div>
         </div>
       </header>
 

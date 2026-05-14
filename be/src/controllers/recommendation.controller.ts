@@ -10,8 +10,8 @@ export const getNextPurchasePrediction = async (
     const limit = Number.parseInt(String(req.query.limit ?? "5"), 10);
     const modelQuery = String(req.query.model ?? "auto").toLowerCase();
     const model =
-      modelQuery === "knn" || modelQuery === "random_forest"
-        ? modelQuery
+      modelQuery === "knn" || modelQuery === "svd" || modelQuery === "random_forest"
+        ? (modelQuery as "auto" | "knn" | "svd" | "random_forest")
         : "auto";
 
     const result = await getNextPurchasePredictions({
