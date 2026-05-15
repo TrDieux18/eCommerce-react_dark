@@ -38,3 +38,9 @@ coverage/
 # Misc
 *.log
 .cache/
+
+.agents/
+.skills/
+.agents-lock.json
+skills-lock.json
+SKILL.md
