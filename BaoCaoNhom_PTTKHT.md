@@ -70,89 +70,92 @@ Hệ thống bao gồm 3 tác nhân (Actors): Khách hàng (Client), Quản tr�
 
 #### A. Biểu đồ Use Case tổng quát hệ thống
 ```mermaid
-left to right direction
-actor "Khách hàng" as Client
-actor "Quản trị viên" as Admin
-actor "Hệ thống ML" as ML
+flowchart LR
+  %% Actors
+  Client((Khách hàng))
+  Admin((Quản trị viên))
+  ML[Hệ thống Machine Learning]
 
-rectangle "Hệ thống Dark Hawk E-Commerce" {
-  usecase "Đăng nhập/Đăng ký" as UC_Auth
-  usecase "Mua sắm & Xem sản phẩm" as UC_Shop
-  usecase "Quản lý giỏ hàng" as UC_Cart
-  usecase "Đặt hàng & Thanh toán" as UC_Checkout
-  usecase "Xem gợi ý mua sắm" as UC_Recommend
-  
-  usecase "Quản trị sản phẩm" as UC_AdminProd
-  usecase "Quản trị hóa đơn" as UC_AdminInv
-  usecase "Xem thống kê Dashboard" as UC_Dashboard
-}
+  %% System Boundary
+  subgraph System["Hệ thống Dark Hawk E-Commerce"]
+    UC_Auth(["Đăng nhập / Đăng ký"])
+    UC_Shop(["Mua sắm & Xem sản phẩm"])
+    UC_Cart(["Quản lý giỏ hàng"])
+    UC_Checkout(["Đặt hàng & Thanh toán"])
+    UC_Recommend(["Xem gợi ý mua sắm"])
+    
+    UC_AdminProd(["Quản trị sản phẩm"])
+    UC_AdminInv(["Quản trị hóa đơn"])
+    UC_Dashboard(["Xem thống kê Dashboard"])
+  end
 
-Client --> UC_Auth
-Client --> UC_Shop
-Client --> UC_Cart
-Client --> UC_Checkout
-Client --> UC_Recommend
+  %% Relationships
+  Client --> UC_Auth
+  Client --> UC_Shop
+  Client --> UC_Cart
+  Client --> UC_Checkout
+  Client --> UC_Recommend
 
-Admin --> UC_Auth
-Admin --> UC_AdminProd
-Admin --> UC_AdminInv
-Admin --> UC_Dashboard
+  Admin --> UC_Auth
+  Admin --> UC_AdminProd
+  Admin --> UC_AdminInv
+  Admin --> UC_Dashboard
 
-UC_Recommend -.-> ML : <<gọi dịch vụ>>
+  UC_Recommend -.->|gọi dịch vụ| ML
 ```
 
 #### B. Biểu đồ Use Case chi tiết phân hệ Khách hàng
 ```mermaid
-left to right direction
-actor "Khách hàng" as Client
+flowchart LR
+  Client((Khách hàng))
 
-rectangle "Phân hệ Khách hàng" {
-  usecase "Xem danh sách sản phẩm" as UC_List
-  usecase "Tìm kiếm sản phẩm" as UC_Search
-  usecase "Lọc theo danh mục" as UC_Filter
-  usecase "Xem chi tiết sản phẩm" as UC_Detail
-  usecase "Thêm vào giỏ hàng" as UC_AddToCart
-  usecase "Cập nhật giỏ hàng" as UC_UpdateCart
-  usecase "Thực hiện đặt hàng" as UC_PlaceOrder
-  usecase "Xem sản phẩm gợi ý" as UC_GetRec
-  usecase "Xem lịch sử hóa đơn" as UC_ViewInv
-  
-  UC_List <.. UC_Search : <<extend>>
-  UC_List <.. UC_Filter : <<extend>>
-  UC_Detail ..> UC_List : <<include>>
-  UC_AddToCart ..> UC_Detail : <<include>>
-  UC_PlaceOrder ..> UC_UpdateCart : <<include>>
-  UC_Detail <.. UC_GetRec : <<extend>>
-}
+  subgraph CustomerSystem["Phân hệ Khách hàng"]
+    UC_List(["Xem danh sách sản phẩm"])
+    UC_Search(["Tìm kiếm sản phẩm"])
+    UC_Filter(["Lọc theo danh mục"])
+    UC_Detail(["Xem chi tiết sản phẩm"])
+    UC_AddToCart(["Thêm vào giỏ hàng"])
+    UC_UpdateCart(["Cập nhật giỏ hàng"])
+    UC_PlaceOrder(["Thực hiện đặt hàng"])
+    UC_GetRec(["Xem sản phẩm gợi ý"])
+    UC_ViewInv(["Xem lịch sử hóa đơn"])
+  end
 
-Client --> UC_List
-Client --> UC_AddToCart
-Client --> UC_PlaceOrder
-Client --> UC_ViewInv
-Client --> UC_GetRec
+  UC_Search -.->|extend| UC_List
+  UC_Filter -.->|extend| UC_List
+  UC_Detail -.->|include| UC_List
+  UC_AddToCart -.->|include| UC_Detail
+  UC_PlaceOrder -.->|include| UC_UpdateCart
+  UC_GetRec -.->|extend| UC_Detail
+
+  Client --> UC_List
+  Client --> UC_AddToCart
+  Client --> UC_PlaceOrder
+  Client --> UC_ViewInv
+  Client --> UC_GetRec
 ```
 
 #### C. Biểu đồ Use Case chi tiết phân hệ Quản trị viên
 ```mermaid
-left to right direction
-actor "Quản trị viên" as Admin
+flowchart LR
+  Admin((Quản trị viên))
 
-rectangle "Phân hệ Quản trị viên" {
-  usecase "Xem Dashboard thống kê" as UC_Dash
-  usecase "Thêm sản phẩm mới" as UC_AddProd
-  usecase "Chỉnh sửa sản phẩm" as UC_EditProd
-  usecase "Xóa sản phẩm" as UC_DelProd
-  usecase "Xem danh sách đơn hàng" as UC_ListInv
-  usecase "Cập nhật trạng thái hóa đơn" as UC_StatusInv
-  
-  UC_StatusInv ..> UC_ListInv : <<include>>
-}
+  subgraph AdminSystem["Phân hệ Quản trị viên"]
+    UC_Dash(["Xem Dashboard thống kê"])
+    UC_AddProd(["Thêm sản phẩm mới"])
+    UC_EditProd(["Chỉnh sửa sản phẩm"])
+    UC_DelProd(["Xóa sản phẩm"])
+    UC_ListInv(["Xem danh sách đơn hàng"])
+    UC_StatusInv(["Cập nhật trạng thái hóa đơn"])
+  end
 
-Admin --> UC_Dash
-Admin --> UC_AddProd
-Admin --> UC_EditProd
-Admin --> Admin --> UC_DelProd
-Admin --> UC_ListInv
+  UC_StatusInv -.->|include| UC_ListInv
+
+  Admin --> UC_Dash
+  Admin --> UC_AddProd
+  Admin --> UC_EditProd
+  Admin --> UC_DelProd
+  Admin --> UC_ListInv
 ```
 
 ---
