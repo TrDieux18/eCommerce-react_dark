@@ -49,7 +49,7 @@ Hệ thống được chia làm hai phân hệ chức năng rõ rệt:
 Để đảm bảo hệ thống vận hành ổn định trong môi trường thương mại điện tử thực tế, các yêu cầu phi chức năng sau đã được thiết kế và thực thi nghiêm ngặt:
 
 1.  **Hiệu năng (Performance):**
-    *   *Thời gian phản hồi (Latency):* Các API truy vấn thông thường (danh sách sản phẩm, thông tin người dùng) phải phản hồi dưới 100ms. Đối với API dự đoán gợi ý mua hàng (vốn phải xử lý toán học phức tạp thông qua mô hình Python ML), thời gian phản hồi phải dưới 150ms nhờ cơ chế bộ đệm (Caching) Redis và cơ chế làm mới ngầm (Stale-While-Revalidate).
+    *   *Thời gian phản hồi (Latency):* Các API truy vấn thông thường (danh sách sản phẩm, thông tin người dùng) phải phản hồi dưới 100ms. Đối với API dự đoán gợi ý mua hàng (vốn phải xử lý toán học phức tạp thông qua mô hình Python ML), thời gian phản hồi phải dưới 150ms nhờ cơ chế bộ đệm (Caching) Valkey và cơ chế làm mới ngầm (Stale-While-Revalidate).
     *   *Tối ưu hóa Frontend:* Sử dụng kỹ thuật chia mã nguồn (Code Splitting) với `React.lazy` và `Suspense` giúp giảm dung lượng bundle ban đầu khi người dùng truy cập. Áp dụng kỹ thuật trì hoãn tìm kiếm (Debounced Search) tại ô tìm kiếm để hạn chế số lượng request liên tục gửi về backend.
 2.  **Khả năng mở rộng (Scalability):**
     *   *Mô hình hướng dịch vụ (SOA):* Việc chia nhỏ hệ thống thành các dịch vụ riêng biệt (User, Product, Cart, Order, Recommendation) cho phép nhân rộng (scale) độc lập các dịch vụ có tải cao. Ví dụ, dịch vụ sản phẩm (`product-service`) có lượng đọc cực kỳ lớn có thể được triển khai nhiều instance mà không ảnh hưởng tới dịch vụ đặt hàng (`order-service`).
@@ -185,8 +185,8 @@ Dưới đây là đặc tả chi tiết cho 2 Use Case cốt lõi của hệ th
 | **Tác nhân** | Khách hàng (Client), Hệ thống ML (tác nhân hỗ trợ) |
 | **Mục tiêu** | Hệ thống hiển thị danh sách các sản phẩm mà khách hàng có khả năng cao sẽ mua tiếp theo dựa trên phân tích lịch sử hành vi mua sắm. |
 | **Tiền điều kiện** | Khách hàng truy cập trang chủ hoặc trang chi tiết sản phẩm. |
-| **Luồng sự kiện chính (Basic Flow)** | 1. Trình duyệt gửi yêu cầu lấy sản phẩm gợi ý của khách hàng đến API Gateway.<br>2. API Gateway định tuyến yêu cầu đến dịch vụ gợi ý (`recommendation-service`).<br>3. Dịch vụ gợi ý kiểm tra bộ đệm Redis để tìm kết quả gợi ý đã lưu trước đó của người dùng.<br>4. Hệ thống phát hiện có dữ liệu trong cache (Cache Hit) và thời hạn lưu trữ vẫn còn hiệu lực.<br>5. Dịch vụ gợi ý trả ngay kết quả trong cache về cho khách hàng (thời gian phản hồi cực nhanh). |
-| **Luồng thay thế (Alternative Flow)** | *Trường hợp Cache Miss hoặc dữ liệu trong cache gần hết hạn (Stale-While-Revalidate):*<br>1. Dịch vụ gợi ý khởi chạy một tiến trình con gọi kịch bản Python Machine Learning (`next_purchase_recommender.py`).<br>2. Script Python kết nối tới MongoDB, thu thập toàn bộ dữ liệu lịch sử hóa đơn của các khách hàng và danh mục sản phẩm hiện có.<br>3. Script Python xây dựng ma trận tương tác người dùng - sản phẩm, áp dụng thuật toán lọc cộng tác KNN (Cosine Similarity) hoặc phân tích giá trị kỳ dị (SVD) để tính điểm số gợi ý.<br>4. Script trộn điểm mô hình với độ phổ biến toàn cục để tối ưu và trả về chuỗi JSON kết quả.<br>5. Dịch vụ gợi ý lưu kết quả này vào Redis Cache và trả về giao diện người dùng. |
+| **Luồng sự kiện chính (Basic Flow)** | 1. Trình duyệt gửi yêu cầu lấy sản phẩm gợi ý của khách hàng đến API Gateway.<br>2. API Gateway định tuyến yêu cầu đến dịch vụ gợi ý (`recommendation-service`).<br>3. Dịch vụ gợi ý kiểm tra bộ đệm Valkey để tìm kết quả gợi ý đã lưu trước đó của người dùng.<br>4. Hệ thống phát hiện có dữ liệu trong cache (Cache Hit) và thời hạn lưu trữ vẫn còn hiệu lực.<br>5. Dịch vụ gợi ý trả ngay kết quả trong cache về cho khách hàng (thời gian phản hồi cực nhanh). |
+| **Luồng thay thế (Alternative Flow)** | *Trường hợp Cache Miss hoặc dữ liệu trong cache gần hết hạn (Stale-While-Revalidate):*<br>1. Dịch vụ gợi ý khởi chạy một tiến trình con gọi kịch bản Python Machine Learning (`next_purchase_recommender.py`).<br>2. Script Python kết nối tới MongoDB, thu thập toàn bộ dữ liệu lịch sử hóa đơn của các khách hàng và danh mục sản phẩm hiện có.<br>3. Script Python xây dựng ma trận tương tác người dùng - sản phẩm, áp dụng thuật toán lọc cộng tác KNN (Cosine Similarity) hoặc phân tích giá trị kỳ dị (SVD) để tính điểm số gợi ý.<br>4. Script trộn điểm mô hình với độ phổ biến toàn cục để tối ưu và trả về chuỗi JSON kết quả.<br>5. Dịch vụ gợi ý lưu kết quả này vào Valkey Cache và trả về giao diện người dùng. |
 | **Luồng ngoại lệ (Exception Flow)** | *Trường hợp khách hàng mới chưa mua gì (Cold Start) hoặc script Python gặp lỗi kết nối/tài nguyên:*<br>- Script Python/Dịch vụ gợi ý tự động phát hiện tình huống và kích hoạt cơ chế dự phòng (`fallback_popularity`).<br>- Hệ thống tính toán độ phổ biến toàn cục của sản phẩm dựa trên số lượng bán chạy của tất cả hóa đơn thành công trước đó.<br>- Trả về danh sách sản phẩm bán chạy nhất cho khách hàng để đảm bảo giao diện vẫn hiển thị nội dung gợi ý hữu ích. |
 | **Hậu điều kiện** | Khách hàng nhận được danh sách gợi ý cá nhân hóa; kết quả gợi ý mới được ghi nhận vào bộ nhớ đệm phục vụ cho các lượt truy cập tiếp theo. |
 
@@ -208,7 +208,7 @@ Hệ thống được phát triển dựa trên các công nghệ hiện đại,
     *   **http-proxy-middleware:** Sử dụng để xây dựng API Gateway định tuyến động tất cả các yêu cầu từ Frontend tới đúng các dịch vụ xử lý tương ứng phía sau.
 *   **Database & Caching (Tầng lưu trữ dữ liệu):**
     *   **MongoDB & Mongoose:** Hệ quản trị cơ sở dữ liệu NoSQL định dạng tài liệu (Document) linh hoạt, phù hợp cho hệ thống thương mại điện tử với cấu trúc sản phẩm và hóa đơn thường xuyên cập nhật. Mongoose giúp định nghĩa các Schema chặt chẽ cho dữ liệu.
-    *   **Redis:** Bộ nhớ đệm lưu trữ dữ liệu phân tán (In-memory Database), đóng vai trò cực kỳ quan trọng trong việc lưu trữ tạm thời kết quả gợi ý sản phẩm của từng người dùng, giảm tải tối đa cho tầng tính toán Machine Learning.
+    *   **Valkey:** Bộ nhớ đệm lưu trữ dữ liệu phân tán (In-memory Database), đóng vai trò cực kỳ quan trọng trong việc lưu trữ tạm thời kết quả gợi ý sản phẩm của từng người dùng, giảm tải tối đa cho tầng tính toán Machine Learning.
 *   **Machine Learning (Tầng trí tuệ nhân tạo):**
     *   **Python 3:** Ngôn ngữ hàng đầu cho phân tích dữ liệu và học máy.
     *   **scikit-learn:** Thư viện máy học dùng để triển khai mô hình Collaborative Filtering dựa trên thuật toán **K-Nearest Neighbors (KNN)** tính khoảng cách Cosine giữa các vector hành vi mua sắm của người dùng, kết hợp phương pháp phân tích ma trận **TruncatedSVD** để tối ưu dự báo.
@@ -241,11 +241,11 @@ graph TD
 ```
 
 ##### Luồng chức năng "Huấn luyện và Dự đoán gợi ý sản phẩm"
-Biểu đồ mô tả cách thức hệ thống tiếp nhận yêu cầu gợi ý, khai thác bộ đệm Redis và triệu gọi script Python để huấn luyện/dự báo hành vi mua tiếp theo.
+Biểu đồ mô tả cách thức hệ thống tiếp nhận yêu cầu gợi ý, khai thác bộ đệm Valkey và triệu gọi script Python để huấn luyện/dự báo hành vi mua tiếp theo.
 
 ```mermaid
 graph TD
-  Start([Yêu cầu lấy gợi ý sản phẩm cho UserId]) --> Dec1{Redis có lưu trữ cache?}
+  Start([Yêu cầu lấy gợi ý sản phẩm cho UserId]) --> Dec1{Valkey có lưu trữ cache?}
   
   Dec1 -- Có Cache Hit -- > Dec2{TTL của cache sắp hết hạn stale?}
   Dec2 -- Không sắp hết hạn --> ReturnCache[Trả về danh sách gợi ý từ cache ngay lập tức] --> End([Kết thúc])
@@ -256,8 +256,8 @@ graph TD
   TriggerBg --> RunPythonBg[Chạy script Python ML]
   RunPythonBg --> DBFetchBg[Đọc dữ liệu MongoDB]
   DBFetchBg --> TrainBg[Huấn luyện KNN / SVD]
-  TrainBg --> UpdateRedisBg[Cập nhật dữ liệu mới vào Redis Cache]
-  UpdateRedisBg --> EndBg([Kết thúc chạy ngầm])
+  TrainBg --> UpdateValkeyBg[Cập nhật dữ liệu mới vào Valkey Cache]
+  UpdateValkeyBg --> EndBg([Kết thúc chạy ngầm])
 
   Dec1 -- Không có Cache Miss --> RunPython[Chạy script Python ML với UserId]
   RunPython --> DBFetch[Đọc dữ liệu Invoices & Products từ MongoDB]
@@ -265,12 +265,12 @@ graph TD
   
   Dec3 -- Không đủ dữ liệu --> Fallback[Chuyển sang chế độ dự phòng Popularity Fallback]
   Fallback --> PopularityScore[Tính điểm sản phẩm bán chạy nhất hệ thống]
-  PopularityScore --> ReturnPop[Trả về gợi ý phổ biến & Lưu vào Redis Cache] --> End
+  PopularityScore --> ReturnPop[Trả về gợi ý phổ biến & Lưu vào Valkey Cache] --> End
   
   Dec3 -- Đủ dữ liệu --> ModelBuild[Xây dựng ma trận tương tác User-Product]
   ModelBuild --> TrainKNN[Tính toán KNN Cosine Similarity & SVD]
   TrainKNN --> Blending[Trộn điểm số: KNN + Co-purchase + Content + Popularity]
-  Blending --> ReturnRecs[Trả về danh sách gợi ý cá nhân hóa & Lưu vào Redis Cache] --> End
+  Blending --> ReturnRecs[Trả về danh sách gợi ý cá nhân hóa & Lưu vào Valkey Cache] --> End
 ```
 
 ---
@@ -309,7 +309,7 @@ sequenceDiagram
   Note over Order: Lưu hóa đơn mới với trạng thái 'pending' vào DB
   
   Order->>Rec: POST /internal/recommendations/invalidate (UserId)
-  Note over Rec: Xóa cache Redis cũ của user (Bất đồng bộ - Fire & Forget)
+  Note over Rec: Xóa cache Valkey cũ của user (Bất đồng bộ - Fire & Forget)
   Rec-->>Order: 200 OK
   
   Order->>Cart: DELETE /internal/cart/clear/:userId
@@ -322,7 +322,7 @@ sequenceDiagram
 ```
 
 ##### Luồng lấy Gợi ý sản phẩm (Recommendation Flow)
-Biểu đồ thể hiện cách thức lấy danh sách khuyến nghị của người dùng từ phía khách hàng thông qua API Gateway, Redis Cache, và script Python Machine Learning.
+Biểu đồ thể hiện cách thức lấy danh sách khuyến nghị của người dùng từ phía khách hàng thông qua API Gateway, Valkey Cache, và script Python Machine Learning.
 
 ```mermaid
 sequenceDiagram
@@ -331,7 +331,7 @@ sequenceDiagram
   participant FE as Frontend React
   participant GW as API Gateway (Port 3000)
   participant Rec as Recommendation Service (Port 3005)
-  participant Redis as Redis Cache
+  participant Valkey as Valkey Cache
   participant Py as Python ML Script
   participant DB as MongoDB
 
@@ -339,23 +339,23 @@ sequenceDiagram
   FE->>GW: GET /recommendations/next-purchase/:userId
   GW->>Rec: Forward GET /recommendations/next-purchase/:userId
   
-  Rec->>Redis: GET rec:next:userId:limit
+  Rec->>Valkey: GET rec:next:userId:limit
   
-  alt Trường hợp 1: Cache Hit (Dữ liệu tồn tại trong bộ nhớ Redis)
-      Redis-->>Rec: Trả về chuỗi JSON kết quả gợi ý
+  alt Trường hợp 1: Cache Hit (Dữ liệu tồn tại trong bộ nhớ Valkey)
+      Valkey-->>Rec: Trả về chuỗi JSON kết quả gợi ý
       Rec-->>GW: Trả về danh sách gợi ý sản phẩm
       GW-->>FE: Trả về danh sách gợi ý sản phẩm
       FE-->>User: Hiển thị danh sách "Gợi ý mua tiếp theo" trên UI
-  else Trường hợp 2: Cache Miss (Không có dữ liệu trong Redis)
-      Redis-->>Rec: null (Không có dữ liệu)
+  else Trường hợp 2: Cache Miss (Không có dữ liệu trong Valkey)
+      Valkey-->>Rec: null (Không có dữ liệu)
       Note over Rec: Khởi chạy script Python tính toán
       Rec->>Py: execFile (python next_purchase_recommender.py --user-id userId)
       Py->>DB: Truy vấn danh sách Invoices & Products thành công
       DB-->>Py: Trả về tập dữ liệu giao dịch bán hàng
       Note over Py: Huấn luyện KNN/SVD & Trộn điểm số
       Py-->>Rec: Trả về kết quả chuỗi JSON
-      Rec->>Redis: SET rec:next:userId:limit (lưu cache với TTL = 1800s)
-      Redis-->>Rec: OK
+      Rec->>Valkey: SET rec:next:userId:limit (lưu cache với TTL = 1800s)
+      Valkey-->>Rec: OK
       Rec-->>GW: Trả về danh sách gợi ý sản phẩm
       GW-->>FE: Trả về danh sách gợi ý sản phẩm
       FE-->>User: Hiển thị danh sách gợi ý sản phẩm trên UI
@@ -407,7 +407,7 @@ graph TD
     CartSvc -->|MongoDB| DB
     OrderSvc -->|MongoDB| DB
     RecSvc -->|MongoDB| DB
-    RecSvc -->|Bộ đệm dự đoán| RedisCache[(Redis Cache)]
+    RecSvc -->|Bộ đệm dự đoán| ValkeyCache[(Valkey Cache)]
   end
 ```
 
@@ -448,12 +448,12 @@ Mã này được các HTTP Client (Axios) chuyển tiếp sang các dịch vụ
 Giúp lập trình viên dễ dàng theo dõi toàn bộ hành trình xử lý của một lượt click đặt hàng đi qua Gateway -> Order Service -> Product Service -> Cart Service -> Recommendation Service.
 
 ##### 4. Cache-Aside & Stale-While-Revalidate Patterns (Tối ưu hóa hiệu năng gợi ý)
-Recommendation Service áp dụng hai mẫu thiết kế quản lý bộ đệm tiên tiến với Redis nhằm mang lại trải nghiệm phản hồi ngay tức thì cho người dùng:
-*   **Cache-Aside Pattern:** Khi có yêu cầu lấy gợi ý sản phẩm, dịch vụ kiểm tra Redis trước. Nếu có (Cache Hit), trả về ngay. Nếu không có (Cache Miss), nó kích hoạt script Python chạy dự báo, lưu kết quả nhận được vào Redis để dùng cho các yêu cầu sau rồi mới phản hồi người dùng.
-*   **Stale-While-Revalidate Pattern:** Đây là điểm nhấn quan trọng giúp tối ưu hóa hiệu năng. Bộ đệm Redis được thiết lập thời gian sống `CACHE_TTL_SECONDS = 1800` (30 phút). Tuy nhiên, một ngưỡng "stale" được định nghĩa tại `STALE_THRESHOLD` (bằng 25% của TTL, tương đương 7.5 phút còn lại). 
+Recommendation Service áp dụng hai mẫu thiết kế quản lý bộ đệm tiên tiến với Valkey nhằm mang lại trải nghiệm phản hồi ngay tức thì cho người dùng:
+*   **Cache-Aside Pattern:** Khi có yêu cầu lấy gợi ý sản phẩm, dịch vụ kiểm tra Valkey trước. Nếu có (Cache Hit), trả về ngay. Nếu không có (Cache Miss), nó kích hoạt script Python chạy dự báo, lưu kết quả nhận được vào Valkey để dùng cho các yêu cầu sau rồi mới phản hồi người dùng.
+*   **Stale-While-Revalidate Pattern:** Đây là điểm nhấn quan trọng giúp tối ưu hóa hiệu năng. Bộ đệm Valkey được thiết lập thời gian sống `CACHE_TTL_SECONDS = 1800` (30 phút). Tuy nhiên, một ngưỡng "stale" được định nghĩa tại `STALE_THRESHOLD` (bằng 25% của TTL, tương đương 7.5 phút còn lại). 
     *   Nếu người dùng yêu cầu gợi ý và bộ đệm còn hiệu lực nhưng thời gian còn lại (TTL) nhỏ hơn 7.5 phút, hệ thống nhận định dữ liệu này đã cũ (stale).
     *   Hệ thống lập tức trả về dữ liệu cũ này cho khách hàng ngay (thời gian phản hồi chỉ dưới 5ms), đảm bảo trải nghiệm khách hàng cực kỳ mượt mà.
-    *   Đồng thời, hệ thống tự động kích hoạt một luồng xử lý bất đồng bộ chạy ngầm (fire-and-forget) để chạy lại script Python cập nhật dữ liệu mới ghi đè vào cache Redis.
+    *   Đồng thời, hệ thống tự động kích hoạt một luồng xử lý bất đồng bộ chạy ngầm (fire-and-forget) để chạy lại script Python cập nhật dữ liệu mới ghi đè vào cache Valkey.
 ```typescript
 if (ttlRemaining >= 0 && ttlRemaining < STALE_THRESHOLD) {
    // Khởi chạy làm mới dữ liệu ngầm bất đồng bộ mà không bắt client phải chờ đợi
@@ -506,7 +506,7 @@ Hệ thống đã được kiểm thử và triển khai chạy ổn định c�
 2.  **Độ tin cậy của luồng nghiệp vụ:** Luồng trừ tồn kho và hoàn trả kho hoạt động chính xác. Khi một hóa đơn ở trạng thái pending bị hủy bởi admin, số lượng sản phẩm lập tức được khôi phục về kho của `product-service`.
 3.  **Hiệu năng vượt trội nhờ Caching:** 
     *   Lần đầu truy cập của một người dùng mới (Cache Miss): Recommendation Service mất khoảng **150ms - 300ms** để khởi chạy Python, đọc DB và huấn luyện mô hình.
-    *   Các lần truy cập tiếp theo (Cache Hit): Thời gian phản hồi API gợi ý sản phẩm giảm xuống chỉ còn từ **3ms - 8ms** do dữ liệu được trả về trực tiếp từ Redis Cache.
+    *   Các lần truy cập tiếp theo (Cache Hit): Thời gian phản hồi API gợi ý sản phẩm giảm xuống chỉ còn từ **3ms - 8ms** do dữ liệu được trả về trực tiếp từ Valkey Cache.
     *   Khi người dùng tiến hành mua sắm đơn hàng mới, cache khuyến nghị cũ lập tức được làm trống để đảm bảo gợi ý của lần truy cập sau phản ánh đúng nhu cầu mua sắm mới nhất.
 
 ---
@@ -516,7 +516,7 @@ Hệ thống đã được kiểm thử và triển khai chạy ổn định c�
 #### A. Ưu điểm
 *   **Kiến trúc hướng dịch vụ mạnh mẽ:** Phân chia rõ ràng trách nhiệm của từng module. Hệ thống có độ khớp nối lỏng (Loose coupling) cao, giúp dễ dàng bảo trì và phát triển tính năng mới mà không sợ ảnh hưởng đến các phần khác.
 *   **Tích hợp Machine Learning thực tế:** Mô hình học máy không chỉ mang tính lý thuyết mà được tích hợp trực tiếp vào luồng nghiệp vụ mua sắm của khách hàng, hoạt động theo thời gian thực (real-time prediction) dựa trên dữ liệu MongoDB Atlas.
-*   **Tối ưu hóa trải nghiệm người dùng:** Giao diện tối giản hiện đại (Dark Theme), tốc độ tải trang nhanh nhờ code splitting và debouncing. Sử dụng Redis Cache kết hợp stale-while-revalidate giải quyết triệt để vấn đề thời gian chờ (latency) khi chạy các thuật toán trí tuệ nhân tạo nặng nề.
+*   **Tối ưu hóa trải nghiệm người dùng:** Giao diện tối giản hiện đại (Dark Theme), tốc độ tải trang nhanh nhờ code splitting và debouncing. Sử dụng Valkey Cache kết hợp stale-while-revalidate giải quyết triệt để vấn đề thời gian chờ (latency) khi chạy các thuật toán trí tuệ nhân tạo nặng nề.
 *   **Hệ thống bám vết tốt:** Việc triển khai Correlation ID và cơ chế ghi log phân tán giúp đội ngũ phát triển dễ dàng khoanh vùng và xử lý lỗi khi vận hành hệ thống thực tế.
 
 #### B. Hạn chế

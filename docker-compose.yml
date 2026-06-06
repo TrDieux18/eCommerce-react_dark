@@ -1,0 +1,12 @@
+services:
+  valkey:
+    image: valkey/valkey:8.0-alpine
+    container_name: darkhawk-valkey
+    ports:
+      - "6379:6379"
+    restart: always
+    volumes:
+      - valkey_data:/data
+
+volumes:
+  valkey_data:

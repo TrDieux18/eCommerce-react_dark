@@ -1,7 +1,7 @@
 import { execFile } from "child_process";
 import path from "path";
 import { promisify } from "util";
-import { getCache, getCacheType, type CacheClient } from "../config/redis";
+import { getCache, getCacheType, type CacheClient } from "../config/valkey";
 
 const execFileAsync = promisify(execFile);
 
@@ -41,7 +41,7 @@ export interface NextPurchasePredictionResult {
    };
    cache?: {
       hit: boolean;
-      source: "redis" | "memory" | "python";
+      source: "redis" | "valkey" | "memory" | "python";
       ttlRemaining?: number;
    };
 }
