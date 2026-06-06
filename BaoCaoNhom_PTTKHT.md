@@ -72,9 +72,9 @@ Hệ thống bao gồm 3 tác nhân (Actors): Khách hàng (Client), Quản tr�
 ```mermaid
 flowchart LR
   %% Actors
-  Client((Khách hàng))
-  Admin((Quản trị viên))
-  ML[Hệ thống Machine Learning]
+  Client["👤 Khách hàng"]
+  Admin["👔 Quản trị viên"]
+  ML["🤖 Hệ thống Machine Learning"]
 
   %% System Boundary
   subgraph System["Hệ thống Dark Hawk E-Commerce"]
@@ -107,7 +107,7 @@ flowchart LR
 #### B. Biểu đồ Use Case chi tiết phân hệ Khách hàng
 ```mermaid
 flowchart LR
-  Client((Khách hàng))
+  Client["👤 Khách hàng"]
 
   subgraph CustomerSystem["Phân hệ Khách hàng"]
     UC_List(["Xem danh sách sản phẩm"])
@@ -138,7 +138,7 @@ flowchart LR
 #### C. Biểu đồ Use Case chi tiết phân hệ Quản trị viên
 ```mermaid
 flowchart LR
-  Admin((Quản trị viên))
+  Admin["👔 Quản trị viên"]
 
   subgraph AdminSystem["Phân hệ Quản trị viên"]
     UC_Dash(["Xem Dashboard thống kê"])
