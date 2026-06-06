@@ -247,7 +247,7 @@ Biểu đồ mô tả cách thức hệ thống tiếp nhận yêu cầu gợi �
 graph TD
   Start([Yêu cầu lấy gợi ý sản phẩm cho UserId]) --> Dec1{Valkey có lưu trữ cache?}
   
-  Dec1 -- Có Cache Hit -- > Dec2{TTL của cache sắp hết hạn stale?}
+  Dec1 -- Có Cache Hit --> Dec2{TTL của cache sắp hết hạn stale?}
   Dec2 -- Không sắp hết hạn --> ReturnCache[Trả về danh sách gợi ý từ cache ngay lập tức] --> End([Kết thúc])
   Dec2 -- Sắp hết hạn stale --> ReturnCache
   
@@ -391,11 +391,10 @@ graph TD
     GW -->|Định tuyến đường dẫn| RecSvc[Recommendation Service - Port 3005]
   end
 
-  subgraph Tầng liên kết nghiệp vụ nội bộ
-    OrderSvc -->|1. Trừ kho| ProdSvc
-    OrderSvc -->|2. Xóa cache| RecSvc
-    OrderSvc -->|3. Xóa giỏ hàng| CartSvc
-  end
+  %% Liên kết nghiệp vụ nội bộ
+  OrderSvc -->|1. Trừ kho| ProdSvc
+  OrderSvc -->|2. Xóa cache| RecSvc
+  OrderSvc -->|3. Xóa giỏ hàng| CartSvc
 
   subgraph Hệ thống máy học độc lập
     RecSvc -->|Triệu gọi script Python| PyML[next_purchase_recommender.py]
