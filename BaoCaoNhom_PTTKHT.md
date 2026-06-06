@@ -190,6 +190,19 @@ Dưới đây là đặc tả chi tiết cho 2 Use Case cốt lõi của hệ th
 | **Luồng ngoại lệ (Exception Flow)** | *Trường hợp khách hàng mới chưa mua gì (Cold Start) hoặc script Python gặp lỗi kết nối/tài nguyên:*<br>- Script Python/Dịch vụ gợi ý tự động phát hiện tình huống và kích hoạt cơ chế dự phòng (`fallback_popularity`).<br>- Hệ thống tính toán độ phổ biến toàn cục của sản phẩm dựa trên số lượng bán chạy của tất cả hóa đơn thành công trước đó.<br>- Trả về danh sách sản phẩm bán chạy nhất cho khách hàng để đảm bảo giao diện vẫn hiển thị nội dung gợi ý hữu ích. |
 | **Hậu điều kiện** | Khách hàng nhận được danh sách gợi ý cá nhân hóa; kết quả gợi ý mới được ghi nhận vào bộ nhớ đệm phục vụ cho các lượt truy cập tiếp theo. |
 
+#### Đặc tả Use Case: Quản lý sản phẩm (Product CRUD - Admin)
+
+| Mục | Nội dung đặc tả |
+| :--- | :--- |
+| **Tên Use Case** | Quản lý sản phẩm (Product CRUD) |
+| **Tác nhân** | Quản trị viên (Admin) |
+| **Mục tiêu** | Admin thêm mới, chỉnh sửa thông tin hoặc xóa sản phẩm trong hệ thống thành công. |
+| **Tiền điều kiện** | Admin đã đăng nhập thành công và có quyền truy cập trang Admin Dashboard. |
+| **Luồng sự kiện chính (Basic Flow) - Thêm sản phẩm mới** | 1. Admin truy cập trang "Quản lý sản phẩm" trên trang quản trị.<br>2. Hệ thống tải danh sách sản phẩm hiện có từ dịch vụ sản phẩm (`product-service`) và hiển thị lên bảng.<br>3. Admin nhấn nút "Thêm sản phẩm mới".<br>4. Hệ thống hiển thị biểu mẫu (Form) nhập liệu.<br>5. Admin nhập đầy đủ thông tin (Tên sản phẩm, mô tả, đơn giá, phần trăm giảm giá, số lượng kho, ảnh thumbnail).<br>6. Hệ thống tự động kích hoạt hàm tạo đường dẫn `slug` thân thiện dựa trên tên sản phẩm.<br>7. Admin xác nhận lưu sản phẩm.<br>8. Hệ thống gửi dữ liệu đến dịch vụ sản phẩm. Dịch vụ sản phẩm kiểm tra tính hợp lệ, lưu vào MongoDB và phản hồi thành công.<br>9. Hệ thống cập nhật danh sách và thông báo thêm sản phẩm thành công. |
+| **Luồng thay thế (Alternative Flow) - Sửa & Xóa sản phẩm** | *Kịch bản chỉnh sửa sản phẩm:*<br>1. Tại bảng danh sách, Admin nhấn nút "Sửa" ở sản phẩm tương ứng.<br>2. Hệ thống hiển thị Form chứa dữ liệu hiện tại.<br>3. Admin chỉnh sửa các trường thông tin và nhấn "Cập nhật". Dịch vụ sản phẩm cập nhật bản ghi trong DB và trả về kết quả thành công.<br><br>*Kịch bản xóa sản phẩm:*<br>1. Admin nhấn nút "Xóa" ở sản phẩm mong muốn.<br>2. Hệ thống hiển thị hộp thoại cảnh báo xác nhận xóa.<br>3. Admin nhấn xác nhận. Dịch vụ sản phẩm xóa sản phẩm hoặc đánh dấu `isActive = false` trong DB, phản hồi thành công. |
+| **Luồng ngoại lệ (Exception Flow)** | *Tại bước 5:* Admin bỏ trống các trường bắt buộc hoặc nhập sai kiểu dữ liệu (ví dụ giá tiền âm hoặc kho hàng chữ cái):<br>- Hệ thống hiển thị thông báo lỗi ngay trên Form (Client-side validation) và khóa nút Lưu.<br>*Tại bước 8:* Gặp lỗi trùng lặp `slug` trong database:<br>- Dịch vụ sản phẩm trả về lỗi mã 400 (Duplicate Key).<br>- Hệ thống hiển thị thông báo lỗi "Tên sản phẩm đã tồn tại" để Admin thay đổi. |
+| **Hậu điều kiện** | Thông tin sản phẩm mới hoặc thay đổi được ghi nhận thành công trong cơ sở dữ liệu MongoDB; giao diện hiển thị cho cả Admin và Khách hàng được cập nhật tương ứng. |
+
 ---
 
 ### 4. Trình bày về công nghệ sử dụng
@@ -360,6 +373,69 @@ sequenceDiagram
       GW-->>FE: Trả về danh sách gợi ý sản phẩm
       FE-->>User: Hiển thị danh sách gợi ý sản phẩm trên UI
   end
+```
+
+##### C. Biểu đồ lớp (Class Diagram)
+Biểu đồ mô tả cấu trúc tĩnh của các thực thể dữ liệu chính trong hệ thống (User, Product, Cart, Invoice) và mối quan hệ giữa chúng.
+
+```mermaid
+classDiagram
+  class User {
+    +ObjectId _id
+    +String username
+    +String email
+    +String password
+    +String role
+    +Date createdAt
+    +Date updatedAt
+    +login()
+    +updateProfile()
+  }
+
+  class Product {
+    +ObjectId _id
+    +String title
+    +String description
+    +Double price
+    +Double discountPercentage
+    +Double rating
+    +Integer stock
+    +String thumbnail
+    +Boolean isActive
+    +String slug
+    +Date createdAt
+    +Date updatedAt
+    +decrementStock(quantity)
+    +restoreStock(quantity)
+  }
+
+  class Cart {
+    +ObjectId _id
+    +ObjectId userId
+    +Array products
+    +Date createdAt
+    +Date updatedAt
+    +addProduct()
+    +updateQuantity()
+    +clearCart()
+  }
+
+  class Invoice {
+    +ObjectId _id
+    +ObjectId userId
+    +Array products
+    +Double totalAmount
+    +String status
+    +Date createdAt
+    +Date updatedAt
+    +createInvoice()
+    +updateStatus()
+  }
+
+  User "1" --> "0..*" Invoice : places
+  User "1" --> "1" Cart : owns
+  Cart "1" --> "0..*" Product : contains
+  Invoice "1" --> "1..*" Product : includes
 ```
 
 ---
