@@ -18,9 +18,6 @@ app.use(
 );
 app.use(cookieParser());
 
-// ---------------------------------------------------------------------------
-// Correlation ID — mỗi request được gán 1 ID duy nhất để tracing
-// ---------------------------------------------------------------------------
 app.use((req, res, next) => {
    const correlationId =
       (req.headers["x-correlation-id"] as string) || uuidv4();
@@ -29,9 +26,7 @@ app.use((req, res, next) => {
    next();
 });
 
-// ---------------------------------------------------------------------------
-// Request Logging
-// ---------------------------------------------------------------------------
+
 app.use((req, res, next) => {
    console.log(
       `[Gateway] ${req.method} ${req.originalUrl} [correlationId: ${req.headers["x-correlation-id"]}]`
@@ -39,9 +34,7 @@ app.use((req, res, next) => {
    next();
 });
 
-// ---------------------------------------------------------------------------
-// Service URLs
-// ---------------------------------------------------------------------------
+
 const USER_SERVICE =
    process.env.USER_SERVICE_URL || "http://localhost:3001";
 const PRODUCT_SERVICE =
@@ -53,15 +46,14 @@ const ORDER_SERVICE =
 const RECOMMENDATION_SERVICE =
    process.env.RECOMMENDATION_SERVICE_URL || "http://localhost:3005";
 
-// ---------------------------------------------------------------------------
-// Proxy helpers
-// ---------------------------------------------------------------------------
+
+
 const proxyOptions = (target: string): Options => ({
    target,
    changeOrigin: true,
    on: {
       proxyReq: (proxyReq, req) => {
-         // Propagate correlation ID to downstream services
+         
          const correlationId = req.headers["x-correlation-id"];
          if (correlationId) {
             proxyReq.setHeader(
@@ -87,7 +79,6 @@ const proxyOptions = (target: string): Options => ({
 
 
 
-// Create proxies
 const userProxy = createProxyMiddleware(proxyOptions(USER_SERVICE));
 const productProxy = createProxyMiddleware(proxyOptions(PRODUCT_SERVICE));
 const cartProxy = createProxyMiddleware(proxyOptions(CART_SERVICE));
@@ -125,9 +116,6 @@ app.use((req, res, next) => {
    next();
 });
 
-// ---------------------------------------------------------------------------
-// Health Check
-// ---------------------------------------------------------------------------
 app.get("/health", (req, res) => {
    res.json({
       status: "ok",
@@ -147,9 +135,7 @@ app.get("/", (req, res) => {
    res.send("API Gateway — SOA E-commerce Backend");
 });
 
-// ---------------------------------------------------------------------------
-// Start
-// ---------------------------------------------------------------------------
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
    console.log(`API Gateway running on http://localhost:${PORT}`);
